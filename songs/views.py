@@ -400,16 +400,36 @@ def _fetch_christian_books(query):
     if not books_api_url:
         return [], "Christian books source is not configured."
 
-    query_text = query.strip() or default_query
+    user_query = query.strip()
+    query_text = user_query or default_query
     endpoint = f"{books_api_url}?{parse.urlencode({'search': query_text})}"
 
     try:
         payload = _cached_fetch_json(endpoint)
     except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError):
-        fallback = _filter_fallback_books(query_text)
+        fallback = _filter_fallback_books(user_query)
         return fallback, "Source: Curated free Christian books (fallback mode)"
 
-    items = payload.get("results", []) if isinstance(payload, dict) else _extract_items(payload)
+    items = []
+    current_payload = payload
+    visited_urls = set()
+    current_url = endpoint
+
+    while isinstance(current_payload, dict):
+        items.extend(current_payload.get("results", []))
+        if len(items) >= max_results:
+            break
+
+        next_url = current_payload.get("next")
+        if not next_url or next_url in visited_urls:
+            break
+
+        visited_urls.add(next_url)
+        try:
+            current_payload = _cached_fetch_json(next_url)
+        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError):
+            break
+
     books = []
     for item in items:
         if not isinstance(item, dict):
@@ -459,7 +479,7 @@ def _fetch_christian_books(query):
 
     books.sort(key=lambda row: str(row.get("title") or "").lower())
     if not books:
-        fallback = _filter_fallback_books(query_text)
+        fallback = _filter_fallback_books(user_query)
         return fallback, "Source: Curated free Christian books (fallback mode)"
     return books, "Source: Gutendex free books API"
 
