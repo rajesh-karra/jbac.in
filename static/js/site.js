@@ -116,3 +116,88 @@ if (songCards.length) {
         });
     });
 }
+
+const booksPage = document.querySelector('[data-books-page]');
+
+if (booksPage) {
+    const booksGrid = booksPage.querySelector('[data-books-grid]');
+    const booksNote = booksPage.querySelector('[data-books-note]');
+    const booksSummary = booksPage.querySelector('[data-books-summary]');
+    const booksEmpty = booksPage.querySelector('[data-books-empty]');
+    const booksPagination = booksPage.querySelector('[data-books-pagination]');
+    const query = (booksPage.dataset.booksQuery || '').trim() || 'christianity';
+
+    const escapeHtml = value => {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    };
+
+    const bookCardMarkup = book => {
+        const title = escapeHtml(book.title || 'Untitled book');
+        const authors = escapeHtml((book.authors || []).map(author => author.name).filter(Boolean).join(', '));
+        const subjects = escapeHtml((book.subjects || []).slice(0, 4).join(', '));
+        const downloadCount = book.download_count || '';
+        const formats = book.formats || {};
+        const openLink = formats['text/html']
+            || formats['application/epub+zip']
+            || formats['text/plain; charset=utf-8']
+            || formats['application/pdf']
+            || '';
+
+        if (!openLink) {
+            return '';
+        }
+
+        const thumb = formats['image/jpeg'] || '';
+        const safeOpenLink = escapeHtml(openLink);
+
+        return `
+            <article class="result-card book-card" data-reveal>
+                ${thumb ? `<img class="book-cover" src="${escapeHtml(thumb)}" alt="${title} cover">` : '<div class="book-cover-placeholder">No Cover</div>'}
+                <h3><a href="${safeOpenLink}" target="_blank" rel="noopener noreferrer">${title}</a></h3>
+                ${authors ? `<p><strong>Author(s):</strong> ${authors}</p>` : ''}
+                ${downloadCount ? `<p><strong>Downloads:</strong> ${escapeHtml(downloadCount)}</p>` : ''}
+                ${subjects ? `<p><strong>Topics:</strong> ${subjects}</p>` : ''}
+                <a class="button button-secondary" href="${safeOpenLink}" target="_blank" rel="noopener noreferrer">Open Free Book</a>
+            </article>
+        `;
+    };
+
+    const shouldHydrateFromBrowser = booksNote && booksNote.textContent.toLowerCase().includes('fallback mode');
+
+    if (shouldHydrateFromBrowser && booksGrid) {
+        fetch(`https://gutendex.com/books/?search=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(payload => {
+                const results = Array.isArray(payload.results) ? payload.results : [];
+                const cards = results.slice(0, 36).map(bookCardMarkup).filter(Boolean);
+                if (!cards.length) {
+                    return;
+                }
+
+                booksGrid.innerHTML = cards.join('');
+                if (booksNote) {
+                    booksNote.textContent = 'Source: Gutendex free books API (browser mode)';
+                }
+                if (booksSummary) {
+                    booksSummary.textContent = `Showing ${cards.length} books`;
+                }
+                if (booksEmpty) {
+                    booksEmpty.remove();
+                }
+                if (booksPagination) {
+                    booksPagination.remove();
+                }
+
+                const refreshedRevealItems = booksGrid.querySelectorAll('[data-reveal]');
+                refreshedRevealItems.forEach(item => item.classList.add('revealed'));
+            })
+            .catch(() => {
+                // Keep server-rendered fallback list if browser fetch fails.
+            });
+    }
+}

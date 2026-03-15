@@ -21,16 +21,16 @@
             <button class="button button-primary" type="submit">Search books</button>
         </form>
 
-        <div>
+        <div data-books-page data-books-query="{{ query|default:'' }}">
             {% if service_note %}
-                <div class="message info" data-reveal>
+                <div class="message info" data-reveal data-books-note>
                     {{ service_note }}
                 </div>
             {% endif %}
 
-            {% if books %}
-                <p class="result-tag" data-reveal>Showing {{ books|length }} of {{ total_matches }} books</p>
-                <div class="books-grid">
+            <p class="result-tag" data-reveal data-books-summary>Showing {{ books|length }} of {{ total_matches }} books</p>
+            <div class="books-grid" data-books-grid>
+                {% if books %}
                     {% for book in books %}
                         <article class="result-card book-card" data-reveal>
                             {% if book.thumbnail %}
@@ -55,33 +55,35 @@
                             {% endif %}
                         </article>
                     {% endfor %}
-                </div>
-
-                {% if page_obj.paginator.num_pages > 1 %}
-                    <nav class="pagination" aria-label="Books pagination" data-reveal>
-                        {% if page_obj.has_previous %}
-                            <a class="button button-secondary" href="{{ request.path }}?q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>
-                        {% endif %}
-                        <div class="pagination-center">
-                            {% for link in pagination_links %}
-                                {% if link.type == 'ellipsis' %}
-                                    <span class="pagination-ellipsis" aria-hidden="true">...</span>
-                                {% else %}
-                                    <a
-                                        class="pagination-number{% if link.active %} pagination-number-active{% endif %}"
-                                        href="{{ request.path }}?q={{ query|urlencode }}&page={{ link.number }}"
-                                        {% if link.active %}aria-current="page"{% endif %}
-                                    >{{ link.number }}</a>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                        {% if page_obj.has_next %}
-                            <a class="button button-secondary" href="{{ request.path }}?q={{ query|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>
-                        {% endif %}
-                    </nav>
                 {% endif %}
-            {% else %}
-                <div class="empty-state" data-reveal>
+            </div>
+
+            {% if page_obj and page_obj.paginator.num_pages > 1 %}
+                <nav class="pagination" aria-label="Books pagination" data-reveal data-books-pagination>
+                    {% if page_obj.has_previous %}
+                        <a class="button button-secondary" href="{{ request.path }}?q={{ query|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>
+                    {% endif %}
+                    <div class="pagination-center">
+                        {% for link in pagination_links %}
+                            {% if link.type == 'ellipsis' %}
+                                <span class="pagination-ellipsis" aria-hidden="true">...</span>
+                            {% else %}
+                                <a
+                                    class="pagination-number{% if link.active %} pagination-number-active{% endif %}"
+                                    href="{{ request.path }}?q={{ query|urlencode }}&page={{ link.number }}"
+                                    {% if link.active %}aria-current="page"{% endif %}
+                                >{{ link.number }}</a>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% if page_obj.has_next %}
+                        <a class="button button-secondary" href="{{ request.path }}?q={{ query|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>
+                    {% endif %}
+                </nav>
+            {% endif %}
+
+            {% if not books %}
+                <div class="empty-state" data-reveal data-books-empty>
                     <h2>No books matched your search</h2>
                     <p>Try a broader keyword like christianity, bible, gospel, church history, theology, or prayer.</p>
                 </div>
