@@ -42,6 +42,124 @@ _BOOK_CACHE = {}
 _PAGE_SIZE = 24
 _BOOKS_PAGE_SIZE = 18
 
+_FALLBACK_FREE_BOOKS = [
+    {
+        "title": "The Kingdom of God Is Within You",
+        "authors": "Leo Tolstoy",
+        "subjects": "Christian ethics, Non-violence, Christianity",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/43302",
+    },
+    {
+        "title": "Orthodoxy",
+        "authors": "G. K. Chesterton",
+        "subjects": "Christian apologetics, Christian thought",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/130",
+    },
+    {
+        "title": "The Practice of the Presence of God",
+        "authors": "Brother Lawrence",
+        "subjects": "Devotional literature, Christian life",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/5657",
+    },
+    {
+        "title": "The Imitation of Christ",
+        "authors": "Thomas a Kempis",
+        "subjects": "Christian devotion, Spiritual life",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/1653",
+    },
+    {
+        "title": "Foxe's Book of Martyrs",
+        "authors": "John Foxe",
+        "subjects": "Church history, Martyrs",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/22400",
+    },
+    {
+        "title": "Confessions",
+        "authors": "Saint Augustine",
+        "subjects": "Christian autobiography, Theology",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/3296",
+    },
+    {
+        "title": "The Pilgrim's Progress",
+        "authors": "John Bunyan",
+        "subjects": "Christian allegory, Classic literature",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/131",
+    },
+    {
+        "title": "Morning and Evening",
+        "authors": "Charles H. Spurgeon",
+        "subjects": "Daily devotion, Sermons",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/17484",
+    },
+    {
+        "title": "On Prayer and the Contemplative Life",
+        "authors": "Thomas Aquinas",
+        "subjects": "Prayer, Christian philosophy",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/18704",
+    },
+    {
+        "title": "The Life of Trust",
+        "authors": "George Muller",
+        "subjects": "Faith, Christian biography",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/11134",
+    },
+    {
+        "title": "A Treatise on Christian Doctrine",
+        "authors": "John Milton",
+        "subjects": "Systematic theology, Christian doctrine",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/10173",
+    },
+    {
+        "title": "The Gospel Day",
+        "authors": "Charles Ebert Orr",
+        "subjects": "Christian teaching, Gospel",
+        "download_count": "",
+        "thumbnail": "",
+        "info_link": "https://www.gutenberg.org/ebooks/27644",
+    },
+]
+
+
+def _filter_fallback_books(query):
+    query_text = (query or "").strip().lower()
+    if not query_text:
+        return list(_FALLBACK_FREE_BOOKS)
+
+    result = []
+    for book in _FALLBACK_FREE_BOOKS:
+        haystack = " ".join(
+            [
+                str(book.get("title") or ""),
+                str(book.get("authors") or ""),
+                str(book.get("subjects") or ""),
+            ]
+        ).lower()
+        if query_text in haystack:
+            result.append(book)
+    return result
+
 
 def _build_pagination_links(current_page, total_pages, radius=2):
     if total_pages <= 1:
@@ -288,7 +406,8 @@ def _fetch_christian_books(query):
     try:
         payload = _cached_fetch_json(endpoint)
     except (HTTPError, URLError, TimeoutError, json.JSONDecodeError, ValueError):
-        return [], "Christian books service is temporarily unavailable."
+        fallback = _filter_fallback_books(query_text)
+        return fallback, "Source: Curated free Christian books (fallback mode)"
 
     items = payload.get("results", []) if isinstance(payload, dict) else _extract_items(payload)
     books = []
@@ -339,6 +458,9 @@ def _fetch_christian_books(query):
             break
 
     books.sort(key=lambda row: str(row.get("title") or "").lower())
+    if not books:
+        fallback = _filter_fallback_books(query_text)
+        return fallback, "Source: Curated free Christian books (fallback mode)"
     return books, "Source: Gutendex free books API"
 
 
