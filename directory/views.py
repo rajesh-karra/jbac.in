@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -90,7 +91,7 @@ def register_category(request, category):
 		form = form_class(request.POST)
 		if form.is_valid():
 			profile = form.save()
-			login(request, profile.user)
+			login(request, profile.user, backend=settings.AUTHENTICATION_BACKENDS[0])
 			messages.success(request, "Registration submitted. An admin can approve directory visibility after review.")
 			return redirect("core:dashboard")
 	else:
