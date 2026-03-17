@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.db.models import Q
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .forms import MeetingFilterForm, MeetingSubmissionForm
@@ -67,3 +67,8 @@ def view_meetings(request):
 
 	meetings = queryset.order_by("start_date", "title")
 	return render(request, "meetings/view_meetings.html", {"form": form, "meetings": meetings})
+
+
+def meeting_detail(request, meeting_id):
+	meeting = get_object_or_404(Meeting, id=meeting_id, is_published=True)
+	return render(request, "meetings/meeting_detail.html", {"meeting": meeting})

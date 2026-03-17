@@ -63,9 +63,13 @@
                     {% endif %}
                     <h3>{{ event.title }}</h3>
                     <p>{{ event.start_date }} - {{ event.end_date }}</p>
+                    <p>{{ event.description|truncatewords:22 }}</p>
                     <p><strong>Location:</strong> {{ event.address }}</p>
                     <p><strong>Organizer:</strong> {{ event.organizer_name }}</p>
                     <p><strong>Expected Attendance:</strong> {{ event.estimated_attendance }}</p>
+                    <p>
+                        <a class="button button-secondary" href="{% url 'meetings:detail' event.id %}">View full details</a>
+                    </p>
                     {% if event.youtube_link %}
                         <p><a href="{{ event.youtube_link }}" target="_blank" rel="noopener">YouTube Channel</a></p>
                     {% endif %}
